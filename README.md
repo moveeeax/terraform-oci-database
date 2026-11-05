@@ -22,7 +22,7 @@ Anything else fails at plan time with an explanatory error.
 
 ```hcl
 module "database" {
-  source = "github.com/moveeeax/terraform-oci-database"
+  source = "github.com/moveeeax/terraform-oci-database?ref=v1.0.0"
 
   compartment_id = var.compartment_id
   display_name   = "prod-adb"
