@@ -62,9 +62,31 @@ automatic backups along with it. If the data has to outlive the instance, take a
 backup before destroying, or set `is_backup_retention_locked = true` so backups cannot be
 removed before the retention period expires — note that the lock cannot be undone.
 
-`admin_password` is marked sensitive and has no default. Pass it from a secret store; the
-module validates it against OCI's complexity rules at plan time rather than letting the
-create call fail half-way through.
+## ADMIN credential
+
+Set exactly one of `admin_password` or `admin_password_secret`; setting both or neither fails
+at plan time.
+
+`admin_password_secret` points the database at an OCI Vault secret that holds the ADMIN
+password. OCI reads the secret when it creates the database, so the password never appears in
+tfvars or in Terraform state:
+
+```hcl
+module "database" {
+  # ...
+  admin_password_secret = {
+    secret_id = var.admin_password_secret_id
+    version   = 2 # optional; omit to use the secret's current version
+  }
+}
+```
+
+The database service has to be allowed to read the secret. See the OCI documentation for
+Autonomous Database Vault secret support for the IAM policy it needs.
+
+`admin_password` still works for setups that pass the password directly. It is marked
+sensitive and is validated against OCI's complexity rules at plan time rather than letting the
+create call fail half-way through, but it does end up in state.
 
 ## Requirements
 
@@ -94,7 +116,8 @@ Running the test suite additionally requires Terraform/OpenTofu >= 1.7 for `mock
 | `data_storage_size_in_tbs`        | Data storage size in terabytes.                                                             | `number`       | `1`                  |    no    |
 | `is_auto_scaling_enabled`         | Whether compute auto-scaling is enabled.                                                    | `bool`         | `true`               |    no    |
 | `is_free_tier`                    | Whether the database is Always Free.                                                        | `bool`         | `false`              |    no    |
-| `admin_password`                  | ADMIN user password (sensitive); required by OCI for a real deployment.                      | `string`       | `null`               |    no    |
+| `admin_password`                  | ADMIN user password (sensitive). Mutually exclusive with `admin_password_secret`.            | `string`       | `null`               |  see above |
+| `admin_password_secret`           | Vault secret holding the ADMIN password: `{ secret_id, version (optional) }`. Mutually exclusive with `admin_password`. | `object`       | `null`               |  see above |
 | `license_model`                   | License model.                                                                              | `string`       | `"LICENSE_INCLUDED"` |    no    |
 | `kms_key_id`                      | Customer-managed Vault key OCID. Must be set with `vault_id`.                                | `string`       | `null`               |    no    |
 | `vault_id`                        | Vault OCID holding `kms_key_id`. Must be set with `kms_key_id`.                              | `string`       | `null`               |    no    |

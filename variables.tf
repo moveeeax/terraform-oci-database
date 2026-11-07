@@ -71,7 +71,7 @@ variable "is_free_tier" {
 }
 
 variable "admin_password" {
-  description = "Password for the ADMIN user. OCI rejects the create call when this is unset, so it must be supplied for any real deployment; it is left optional only so the module can be planned without a credential. Never hard-code it - pass it from a secret store or a sensitive variable."
+  description = "Password for the ADMIN user. Mutually exclusive with admin_password_secret; exactly one of the two must be set. Never hard-code it - pass it from a secret store or a sensitive variable, or use admin_password_secret to keep it out of configuration and state entirely."
   type        = string
   default     = null
   sensitive   = true
@@ -89,6 +89,30 @@ variable "admin_password" {
       !can(regex("(?i)admin", var.admin_password))
     )
     error_message = "admin_password must be 12-30 characters long, contain at least one uppercase letter, one lowercase letter and one digit, must not contain a double quote, and must not contain the string \"admin\"."
+  }
+}
+
+variable "admin_password_secret" {
+  description = "OCI Vault secret holding the ADMIN password. OCI reads the secret when it creates the database, so the password never appears in tfvars or state. `version` pins a secret version number; leave it null to use the current version. Mutually exclusive with admin_password; exactly one of the two must be set."
+  type = object({
+    secret_id = string
+    version   = optional(number)
+  })
+  default = null
+
+  validation {
+    condition     = var.admin_password_secret == null ? true : length(trimspace(var.admin_password_secret.secret_id)) > 0
+    error_message = "admin_password_secret.secret_id must be the OCID of a Vault secret."
+  }
+
+  validation {
+    condition = var.admin_password_secret == null ? true : (
+      var.admin_password_secret.version == null ? true : (
+        var.admin_password_secret.version >= 1 &&
+        floor(var.admin_password_secret.version) == var.admin_password_secret.version
+      )
+    )
+    error_message = "admin_password_secret.version must be a positive whole number when set."
   }
 }
 

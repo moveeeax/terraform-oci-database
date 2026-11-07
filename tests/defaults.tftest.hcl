@@ -176,3 +176,84 @@ run "rejects_invalid_db_name" {
 
   expect_failures = [var.db_name]
 }
+
+# --- ADMIN credential from OCI Vault -------------------------------------------
+
+run "admin_password_from_vault_secret" {
+  command = plan
+
+  variables {
+    whitelisted_ips = ["203.0.113.0/24"]
+    admin_password  = null
+    admin_password_secret = {
+      secret_id = "ocid1.vaultsecret.oc1..aaaaaaaaexamplesecret"
+      version   = 3
+    }
+  }
+
+  assert {
+    condition     = oci_database_autonomous_database.this.secret_id == "ocid1.vaultsecret.oc1..aaaaaaaaexamplesecret"
+    error_message = "admin_password_secret.secret_id must be passed through as secret_id."
+  }
+
+  assert {
+    condition     = oci_database_autonomous_database.this.secret_version_number == 3
+    error_message = "admin_password_secret.version must be passed through as secret_version_number."
+  }
+}
+
+run "admin_password_secret_without_version" {
+  command = plan
+
+  variables {
+    whitelisted_ips = ["203.0.113.0/24"]
+    admin_password  = null
+    admin_password_secret = {
+      secret_id = "ocid1.vaultsecret.oc1..aaaaaaaaexamplesecret"
+    }
+  }
+
+  assert {
+    condition     = oci_database_autonomous_database.this.secret_id == "ocid1.vaultsecret.oc1..aaaaaaaaexamplesecret"
+    error_message = "secret_id must be set even when no version is pinned."
+  }
+}
+
+run "rejects_admin_password_and_secret_together" {
+  command = plan
+
+  variables {
+    whitelisted_ips = ["203.0.113.0/24"]
+    admin_password_secret = {
+      secret_id = "ocid1.vaultsecret.oc1..aaaaaaaaexamplesecret"
+    }
+  }
+
+  expect_failures = [oci_database_autonomous_database.this]
+}
+
+run "rejects_missing_admin_credential" {
+  command = plan
+
+  variables {
+    whitelisted_ips = ["203.0.113.0/24"]
+    admin_password  = null
+  }
+
+  expect_failures = [oci_database_autonomous_database.this]
+}
+
+run "rejects_invalid_admin_password_secret_version" {
+  command = plan
+
+  variables {
+    whitelisted_ips = ["203.0.113.0/24"]
+    admin_password  = null
+    admin_password_secret = {
+      secret_id = "ocid1.vaultsecret.oc1..aaaaaaaaexamplesecret"
+      version   = 0
+    }
+  }
+
+  expect_failures = [var.admin_password_secret]
+}

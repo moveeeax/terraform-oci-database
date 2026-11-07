@@ -10,8 +10,14 @@ resource "oci_database_autonomous_database" "this" {
   data_storage_size_in_tbs = var.data_storage_size_in_tbs
   is_auto_scaling_enabled  = var.is_auto_scaling_enabled
   is_free_tier             = var.is_free_tier
-  admin_password           = var.admin_password
   license_model            = var.license_model
+
+  # ADMIN credential. Either a literal password, or a reference to an OCI Vault
+  # secret that OCI reads at create time. The secret form keeps the password out
+  # of tfvars and out of state; the precondition below requires exactly one.
+  admin_password        = var.admin_password
+  secret_id             = try(var.admin_password_secret.secret_id, null)
+  secret_version_number = try(var.admin_password_secret.version, null)
 
   # Network placement. Either the database is reachable only through a private
   # endpoint in `subnet_id`, or it keeps its public endpoint and that endpoint is
@@ -55,6 +61,11 @@ resource "oci_database_autonomous_database" "this" {
     precondition {
       condition     = (var.kms_key_id == null) == (var.vault_id == null)
       error_message = "kms_key_id and vault_id must be set together: a customer-managed encryption key needs the OCID of the Vault that holds it."
+    }
+
+    precondition {
+      condition     = (var.admin_password == null) != (var.admin_password_secret == null)
+      error_message = "Set exactly one of admin_password or admin_password_secret. OCI needs an ADMIN credential to create the database, and it accepts either a literal password or a Vault secret reference, not both."
     }
   }
 }
