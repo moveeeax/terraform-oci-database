@@ -6,6 +6,8 @@ All notable changes to this module are documented in this file. The format is ba
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-07
+
 ### Added
 
 - `admin_password_secret` input (`{ secret_id, version }`) that reads the ADMIN password from an
@@ -18,3 +20,6 @@ All notable changes to this module are documented in this file. The format is ba
   `admin_password` could be left null and the plan succeeded, with OCI rejecting the create call
   later; that configuration now fails at plan time instead. Configurations that could be applied
   before are unaffected.
+
+[Unreleased]: https://github.com/moveeeax/terraform-oci-database/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/moveeeax/terraform-oci-database/compare/v1.1.0...v1.2.0
