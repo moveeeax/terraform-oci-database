@@ -14,6 +14,7 @@ All notable changes to this module are documented in this file. The format is ba
 
 ### Changed
 
-- Breaking: exactly one of `admin_password` or `admin_password_secret` must now be set. Before,
+- Exactly one of `admin_password` or `admin_password_secret` must now be set. Before,
   `admin_password` could be left null and the plan succeeded, with OCI rejecting the create call
-  later; that configuration now fails at plan time.
+  later; that configuration now fails at plan time instead. Configurations that could be applied
+  before are unaffected.
